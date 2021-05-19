@@ -32,6 +32,13 @@ class SmartEMFNotification implements Notification, NotificationChainWorkaround 
 		this.newValue = newValue
 	}
 	
+	new(int eventType, Object oldValue, Object newValue, EStructuralFeature feature) {
+		this.eventType = eventType
+		this.oldValue = oldValue
+		this.newValue = newValue
+		this.feature = feature
+	}
+	
 	new(Notification n) {
 		this.eventType = n.eventType
 		this.position = n.position
@@ -50,7 +57,7 @@ class SmartEMFNotification implements Notification, NotificationChainWorkaround 
 	 */
 	def static addToFeature(EObject owner, EStructuralFeature feature, Object object, int index) {
 		if (feature === null) return null
-		val notification = new SmartEMFNotification(ADD, null, object)
+		val notification = new SmartEMFNotification(ADD, null, object, feature)
 		notification.notifier = owner
 		notification.feature = feature
 		notification.position = index
@@ -66,7 +73,7 @@ class SmartEMFNotification implements Notification, NotificationChainWorkaround 
 	 * @param index if the attribute is a list, the position where in the list the value was set
 	 */
 	def static set(EObject owner, EStructuralFeature feature, Object oldValue, Object newValue, int index) {
-		val notification = new SmartEMFNotification(SET, oldValue, newValue)
+		val notification = new SmartEMFNotification(SET, oldValue, newValue, feature)
 		notification.notifier = owner
 		notification.feature = feature
 		notification.position = index
@@ -74,7 +81,7 @@ class SmartEMFNotification implements Notification, NotificationChainWorkaround 
 	}
 	
 	def static unset(EObject owner, EStructuralFeature feature, Object oldValue, Object newValue, int index) {
-		val notification = new SmartEMFNotification(UNSET, oldValue, newValue)
+		val notification = new SmartEMFNotification(UNSET, oldValue, newValue, feature)
 		notification.notifier = owner
 		notification.feature = feature
 		notification.position = index
@@ -93,9 +100,9 @@ class SmartEMFNotification implements Notification, NotificationChainWorkaround 
 			if (object instanceof Adapter.Internal) {
 				object.unsetTarget(owner)
 			}
-			new SmartEMFNotification(REMOVING_ADAPTER, object, null)
+			new SmartEMFNotification(REMOVING_ADAPTER, object, null, feature)
 		} else {
-			new SmartEMFNotification(REMOVE, object, null)
+			new SmartEMFNotification(REMOVE, object, null, feature)
 		}
 		notification.notifier = owner
 		notification.feature = feature
@@ -112,7 +119,7 @@ class SmartEMFNotification implements Notification, NotificationChainWorkaround 
 	 * @param newIndex the object's new position
 	 */
 	def static moveInList(EObject owner, EStructuralFeature feature, Object object, int oldIndex, int newIndex) {
-		val notification = new SmartEMFNotification(MOVE, oldIndex, object)
+		val notification = new SmartEMFNotification(MOVE, oldIndex, object, feature)
 		notification.notifier = owner
 		notification.feature = feature
 		notification.position = newIndex
@@ -144,7 +151,7 @@ class SmartEMFNotification implements Notification, NotificationChainWorkaround 
 		if (objects.size == 0) return null;
 		if (objects.size == 1) return addToFeature(owner, feature, objects.iterator.next as Object, NO_INDEX)
 		
-		val notification = new SmartEMFNotification(ADD_MANY, null, objects)
+		val notification = new SmartEMFNotification(ADD_MANY, null, objects, feature)
 		notification.notifier = owner
 		notification.feature = feature
 		notification.position = NO_INDEX
@@ -162,7 +169,7 @@ class SmartEMFNotification implements Notification, NotificationChainWorkaround 
 		if (objects.size == 1) return removeFromFeature(owner, feature, objects.iterator.next as Object, NO_INDEX)
 		
 		val int[] arr = Collections.nCopies(objects.size, -1)
-		val notification = new SmartEMFNotification(REMOVE_MANY, objects, arr)
+		val notification = new SmartEMFNotification(REMOVE_MANY, objects, arr, feature)
 		notification.notifier = owner
 		notification.feature = feature
 		notification.position = NO_INDEX
@@ -187,7 +194,8 @@ class SmartEMFNotification implements Notification, NotificationChainWorkaround 
 	
 	/* This may not be implemented correctly, but it seems to work for now */
 	override getFeatureID(Class<?> expectedClass) {
-		if (feature.getEContainingClass.getClass == expectedClass) {
+		//somewhere a nullpointerexception is being thrown
+		if (feature !== null && feature.getEContainingClass !== null && feature.getEContainingClass.getClass == expectedClass) {
 			feature.getFeatureID
 		} else {
 			Notification.NO_FEATURE_ID
@@ -409,7 +417,8 @@ class SmartEMFNotification implements Notification, NotificationChainWorkaround 
    override merge(Notification notification) {
 		if (notification === null) {
 			true
-		} else if (getFeatureID(feature.getEContainingClass.getClass()) != notification.getFeatureID(feature.getEContainingClass.getClass())
+		} else if ( feature !== null && feature.getEContainingClass !== null && 
+			getFeatureID(feature.getEContainingClass.getClass()) != notification.getFeatureID(feature.getEContainingClass.getClass())
 				|| notifier != notification.notifier) {
 		    false
 		} else {
@@ -495,6 +504,25 @@ class SmartEMFNotification implements Notification, NotificationChainWorkaround 
 		val bIsArr = b instanceof int[]
 		val lengthA = if (aIsArr) (a as int[]).length else 1
 		val lengthB = if (bIsArr) (b as int[]).length else 1
+		
+		if(a === null){
+			val int[] arr = newIntArrayOfSize(lengthB)	
+			if (bIsArr) {
+				System.arraycopy(b, 0, arr, 0, lengthB)
+			} else {
+				arr.set(0, b as Integer)
+			}
+			return arr	
+		}
+		if(b === null){
+			val int[] arr = newIntArrayOfSize(lengthA)	
+			if (aIsArr) {
+				System.arraycopy(a, 0, arr, 0, lengthA)
+			} else {
+				arr.set(0, a as Integer)
+			}
+			return arr		
+		}
 		val int[] merged = newIntArrayOfSize(lengthA + lengthB)
 		
 		if (aIsArr) {

@@ -307,14 +307,14 @@ class XtendXMIResource extends ResourceImpl implements XMIResource {
 	private def CharSequence toXMITag(EObject object, int depth) {
 		val indentation = this.indentation * depth
 		val sb = new StringBuilder()
-		val name = tagName(object, object.eContainingFeature)
+		val name = (object === null)? "null" : tagName(object, object.eContainingFeature)
 		
-		val contents = object.eContents.filter[x | if (x.eContainingFeature !== null) !x.eContainingFeature.isTransient else true]
+		val contents = object.eContents.filter[x | if (x !== null && x.eContainingFeature !== null) !x.eContainingFeature.isTransient else true]
 		
 		if (!contents.isEmpty) {
 			sb.append('''«System.lineSeparator»«indentation»<«name»«xmiAttributes(object)»>''')
 			for (e : contents) {
-				sb.append(toXMITag(e, depth + 1))
+				if(e !== null) sb.append(toXMITag(e, depth + 1))
 			}
 			sb.append('''«System.lineSeparator»«indentation»</«name»>''')
 		} else {
@@ -354,7 +354,8 @@ class XtendXMIResource extends ResourceImpl implements XMIResource {
 	 * @return the tag name for the root object
 	 */
 	private def String rootName(EObject object) {
-		object.eClass.getEPackage.getName + ":" + object.eClass.getName
+		if(object === null) return "null"
+		else return object.eClass.getEPackage.getName + ":" + object.eClass.getName
 	}
 	
 	private def tagName(EObject object) {
@@ -400,6 +401,8 @@ class XtendXMIResource extends ResourceImpl implements XMIResource {
 	 * Creates the XML attributes of the root object
 	 */
 	private def String createRootAttributes(XMIRoot root) {
+		//TODO:Changed here
+		if(!root.contents.iterator.hasNext) return ""
 		val pkg = getPackage(root)
 		'''xmi:version="«xmiVersion»" xmlns:xmi="«xmiNamespace»" xmlns:«pkg.getNsPrefix»="«pkg.getNsURI»"'''
 	}
@@ -485,7 +488,7 @@ class XtendXMIResource extends ResourceImpl implements XMIResource {
 		}
 		setID(obj, path)
 		var j = 0
-		val contents = obj.eContents.filter[x | x.eContainingFeature !== null && !x.eContainingFeature.isTransient]
+		val contents = obj.eContents.filter[x | x !== null && x.eContainingFeature !== null && !x.eContainingFeature.isTransient]
 		for (o : contents) {
 			xPathForObject(o, path, j++, false)
 		}

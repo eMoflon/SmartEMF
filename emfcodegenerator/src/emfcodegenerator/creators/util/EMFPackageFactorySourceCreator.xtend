@@ -44,6 +44,11 @@ class EMFPackageFactorySourceCreator extends EMFPackageFactoryInterfaceCreator {
 			//just import all classes for simplicity sake
 			this.add_import_as_String(this.package_declaration + "." + import.name)
 		}
+		//enums also need to be imported
+		for(import: package_inspector.get_all_eenums_in_package){
+			//just import all classes for simplicity sake
+			this.add_import_as_String(this.package_declaration + "." + import.name)
+		}
 		//add also the package 
 		this.add_import_as_String(this.package_declaration + "." + this.interface_name.replace("Factory" , "Package"))
 		this.add_import_as_String("org.eclipse.emf.ecore.EClass")
@@ -51,6 +56,7 @@ class EMFPackageFactorySourceCreator extends EMFPackageFactoryInterfaceCreator {
 		this.add_import_as_String("org.eclipse.emf.ecore.EPackage")
 		this.add_import_as_String("org.eclipse.emf.ecore.impl.EFactoryImpl")
 		this.add_import_as_String("org.eclipse.emf.ecore.plugin.EcorePlugin")
+		this.add_import_as_String("org.eclipse.emf.ecore.EDataType")
 
 		//change the package declaration to the proper one
 		this.package_declaration += ".impl"
@@ -190,6 +196,33 @@ class EMFPackageFactorySourceCreator extends EMFPackageFactoryInterfaceCreator {
 	}
 	
 	/**
+	 *  create the createFromString methods that are necessary for .xmi parsing of enums
+	 */
+	def create_methods_for_enum_initialization(){
+		var iterations = 0
+		var declaration = 
+'''
+«IDENTION»@Override
+«IDENTION»public Object createFromString(EDataType eDataType, String initialValue) {
+«IDENTION»«IDENTION» Object result = null;	'''
+		for(e_enum : this.e_pak.get_all_eenums_in_package){
+			declaration += 
+'''
+«IDENTION»«IDENTION»«IF iterations !== 0»else «ENDIF»if (eDataType.getClassifierID() == «this.e_pak.get_emf_package_class_name».«emf_to_uppercase(e_enum.name)») {
+«IDENTION»«IDENTION»«IDENTION»result = «e_enum.name».get(initialValue);
+«IDENTION»«IDENTION»}'''
+			iterations++
+		}
+declaration +=
+'''
+«IDENTION»«IDENTION»if(result == null){
+«IDENTION»«IDENTION»«IDENTION»throw new IllegalArgumentException("The datatype '" + eDataType.getName() + "' is not a valid classifier");	
+«IDENTION»«IDENTION»}
+«IDENTION»«IDENTION»return result;
+«IDENTION»}'''
+		return declaration
+	}
+	/**
 	 * @inheritDoc
 	 */
 	override write_to_file() {
@@ -226,6 +259,8 @@ class EMFPackageFactorySourceCreator extends EMFPackageFactoryInterfaceCreator {
 			factory_fw.write('''«entry.value»'''.toString)
 			factory_fw.write(IDENTION + "}" + System.lineSeparator + System.lineSeparator)
 		}
+		//create the methods for enum initialization
+		factory_fw.write(create_methods_for_enum_initialization())
 		
 		//close the class
 		factory_fw.write("}" + System.lineSeparator)

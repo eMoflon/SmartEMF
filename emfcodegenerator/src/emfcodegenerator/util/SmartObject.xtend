@@ -26,6 +26,7 @@ import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.emf.ecore.util.EcoreUtil
 import org.eclipse.emf.ecore.util.InternalEList
 import persistence.XtendXMIResource
+import org.eclipse.emf.common.notify.Notifier
 
 /**
  * SmartEMF base-class for all generated objects.
@@ -239,7 +240,8 @@ class SmartObject implements MinimalSObjectContainer, EObject {
 		if (eNotificationRequired) for (Adapter a : eAdapters) {
 			a.notifyChanged(n)
 		}
-		chain.dispatch
+		//this causes a infinite recursion and a stack overflow
+		//chain.dispatch		
 	}
 	
 	override eSetDeliver(boolean deliver) {
@@ -333,25 +335,28 @@ class SmartObject implements MinimalSObjectContainer, EObject {
 		var SmartEMFNotification notification = null
 		while (children.hasNext) {
 			val content = children.next as EObject
-			val container = content.eContainer
-			val feature = content.eContainingFeature
-			val index = -1 //iterating over the list to find the index is slow - only implement if actually needed
-			switch (eventType) {
-				case Notification.ADD, case Notification.ADD_MANY, case Notification.SET: {
-					if (notification === null) {
-						notification = SmartEMFNotification.addToFeature(container, feature, content, index)
-					} else {
-						notification.add(SmartEMFNotification.addToFeature(container, feature, content, index))
+			//sometimes the content may be null
+			if(content !== null){
+				val container = content.eContainer
+				val feature = content.eContainingFeature
+				val index = -1 //iterating over the list to find the index is slow - only implement if actually needed
+				switch (eventType) {
+					case Notification.ADD, case Notification.ADD_MANY, case Notification.SET: {
+						if (notification === null) {
+							notification = SmartEMFNotification.addToFeature(container, feature, content, index)
+						} else {
+							notification.add(SmartEMFNotification.addToFeature(container, feature, content, index))
+						}
 					}
-				}
-				case Notification.REMOVE, case Notification.REMOVE_MANY, case Notification.UNSET: {
-					if (notification === null) {
-						notification = SmartEMFNotification.removeFromFeature(container, feature, content, index)
-					} else {
-						notification.add(SmartEMFNotification.removeFromFeature(container, feature, content, index))
+					case Notification.REMOVE, case Notification.REMOVE_MANY, case Notification.UNSET: {
+						if (notification === null) {
+							notification = SmartEMFNotification.removeFromFeature(container, feature, content, index)
+						} else {
+							notification.add(SmartEMFNotification.removeFromFeature(container, feature, content, index))
+						}
 					}
-				}
-			}
+				}	
+			}		
 		}
 		return notification
 	}
@@ -384,6 +389,12 @@ class SmartObject implements MinimalSObjectContainer, EObject {
 	 * the resource that directly contains this object 
 	 */
 	var	Resource resource
+	
+	StringBuilder result
+	
+	StringBuilder string
+	
+	StringBuilder str
 
 	override is_containment_object() {
 		this.is_containment_object
@@ -414,13 +425,21 @@ class SmartObject implements MinimalSObjectContainer, EObject {
 		this.the_eContainer = container
 		this.the_econtaining_feature = feature;
 		
-		if (!eContainingFeature.isMany) {
+		//this is leading to a stackoverflow since the container and containing feature each want to eSet each other
+		//TODO:solve this
+		if (!eContainingFeature.isMany && eContainer.eGet(eContainingFeature) != this) {
 			eContainer.eSet(eContainingFeature, this)
 		}
 	}
 	
 	static def toStringIfNotNull(Object obj) {
-		(obj ?: "null").toString
+		//I made the code here much easier because this is recursive but I dont know why
+		//TODO:change here
+		if(obj === null) return "null"
+		else {
+		   return obj.class.toString
+		}	
+		//(obj ?: "null").toString
+
 	}
-	
 }

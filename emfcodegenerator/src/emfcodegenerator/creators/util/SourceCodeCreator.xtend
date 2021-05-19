@@ -22,11 +22,12 @@ import emfcodegenerator.inspectors.util.AbstractObjectFieldInspector
 import emfcodegenerator.inspectors.InspectedObjectType
 import emfcodegenerator.util.collections.SmartCollectionFactory
 
+
 /**
  * creates the source code for an EClass
  */
 class SourceCodeCreator extends InterfaceCreator {
-
+	static val primitives = Arrays.asList("byte", "short", "int", "long", "float", "double", "char", "boolean")
 	/**########################Attributes########################*/
 
 	/**
@@ -470,11 +471,13 @@ class SourceCodeCreator extends InterfaceCreator {
 		val fieldName = obj_field.get_name
 			
 		var declaration = IDENTION + "public " + create_setter_method_stump((obj_field))
+		
 		var body = IDENTION + IDENTION + "Object oldValue = this." + fieldName + ";" + System.lineSeparator
 
 		//if the passed feature is an EReference, then the containment of said reference must be
 		//handled. In that case the old contained object needs its containment flag reset
 		if(is_reference_and_contained)
+
 			body +=
 '''
 «IDENTION»«IDENTION»if(this.«obj_field.get_name» != null) ((emfcodegenerator.util.MinimalSObjectContainer) this.«fieldName»).reset_containment();
