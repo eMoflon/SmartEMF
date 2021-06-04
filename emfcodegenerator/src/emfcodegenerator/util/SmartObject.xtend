@@ -27,6 +27,7 @@ import org.eclipse.emf.ecore.util.EcoreUtil
 import org.eclipse.emf.ecore.util.InternalEList
 import persistence.XtendXMIResource
 import org.eclipse.emf.common.notify.Notifier
+import java.util.stream.Collectors
 
 /**
  * SmartEMF base-class for all generated objects.
@@ -100,7 +101,11 @@ class SmartObject implements MinimalSObjectContainer, EObject {
 	 * container's class.
 	 */
 	override EReference eContainmentFeature(){
-		throw new UnsupportedOperationException("This operation is not permitted. kindly use eContainingFeature() instead.")
+		if(this.the_econtaining_feature instanceof EReference){
+			return this.the_econtaining_feature
+		}else {
+			throw new UnsupportedOperationException("This operation is not permitted. kindly use eContainingFeature() instead.")			
+		}
 	}
 
 	/**
@@ -108,7 +113,8 @@ class SmartObject implements MinimalSObjectContainer, EObject {
 	 */
 	override EList<EObject> eContents(){
 		val containments = eClass.getEAllContainments
-		return containments.stream.map[x | toContentList(x)].collect(toChainingEList())
+		return containments.stream.map[x | toContentList(x)].filter(obj | !obj.nullOrEmpty).collect(toChainingEList())
+
 	}
 		
 	def Collector<List<EObject>, ?, EList<EObject>> toChainingEList() {
@@ -141,6 +147,8 @@ class SmartObject implements MinimalSObjectContainer, EObject {
 		val obj = eGet(reference);
 		if (obj instanceof EList) {
 			obj as EList<EObject>
+		} else if (obj === null){
+			return Collections.EMPTY_LIST
 		} else Collections.singletonList(obj as EObject)
 	}
 
@@ -241,7 +249,7 @@ class SmartObject implements MinimalSObjectContainer, EObject {
 			a.notifyChanged(n)
 		}
 		//this causes a infinite recursion and a stack overflow
-		//chain.dispatch		
+//		chain.dispatch		
 	}
 	
 	override eSetDeliver(boolean deliver) {
@@ -280,13 +288,14 @@ class SmartObject implements MinimalSObjectContainer, EObject {
 	}
 	
 	protected def NotificationChain cascadeNotifications(Notification n) {
+		//Ill remove n because I think it is leading to a stackoverflow
 		if (!getCascade() && #[Notification.ADD, Notification.ADD_MANY].contains(n.eventType)) {
-			return new NotificationList(n)
+			return new NotificationList()//n)
 		}
 		val chain = if (n instanceof NotificationChain) {
 			n
 		} else {
-			new NotificationList(n)
+			new NotificationList()//n)
 		}
 		switch (n.eventType) {
 			case Notification.ADD, case Notification.REMOVE, case Notification.SET, case Notification.UNSET: {
@@ -441,5 +450,9 @@ class SmartObject implements MinimalSObjectContainer, EObject {
 		}	
 		//(obj ?: "null").toString
 
+	}
+	
+	def setResource(Resource resource){
+		this.resource = resource
 	}
 }

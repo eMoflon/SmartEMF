@@ -32,7 +32,9 @@ public class NotificationList extends LinkedList<Notification> implements Notifi
 	public void dispatch() {
 		for (Notification n : this) {
 			Notifier notifier = (Notifier)(n.getNotifier());
-			notifier.eNotify(n);
+		    if (notifier != null && n.getEventType() != -1) {
+		    	notifier.eNotify(n);		    	
+		    }
 		}
 	}
 

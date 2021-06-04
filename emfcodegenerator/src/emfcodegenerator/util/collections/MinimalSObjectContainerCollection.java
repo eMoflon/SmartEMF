@@ -123,7 +123,10 @@ interface MinimalSObjectContainerCollection<E> extends InternalEList<E>, Minimal
 		EObject container = eContainer();
 		if (container != null && container.eDeliver() && !Objects.requireNonNullElse(container.eAdapters(), Collections.EMPTY_LIST).isEmpty()) {
 			return notificationBuilder().add(notificationFactory.get());
-		} else {
+		//the next else if I only added for testing purposes!!!
+//		} else if(container == null){
+//			return notificationBuilder().add(notificationFactory.get());		
+		}else {
 			return false;
 		}
 	}

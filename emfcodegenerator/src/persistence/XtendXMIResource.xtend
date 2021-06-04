@@ -37,6 +37,9 @@ import org.eclipse.emf.ecore.xml.type.AnyType
 import org.w3c.dom.Document
 import org.w3c.dom.Node
 import org.xml.sax.InputSource
+import emfcodegenerator.util.collections.HashESet
+import emfcodegenerator.util.collections.LinkedEList
+import emfcodegenerator.notification.SmartEMFNotification
 
 /**
  * A simplified resource implementation that serializes to XMI. Ignores save options. Can enable notification cascading for its contents.
@@ -82,6 +85,16 @@ class XtendXMIResource extends ResourceImpl implements XMIResource {
     		} else {
     		  data.contains(o)
     		}
+    	}
+    	override add(EObject object){
+    		if (object instanceof InternalEObject) {
+    			super.add(object)
+    		} else if (object instanceof SmartObject) {
+    			object.resource = XtendXMIResource.this
+    			super.add(object)
+    			SmartEMFNotification.addToFeature(object.eContainer, object.eContainingFeature, object, size).dispatch
+				return true;
+    		} else throw new UnsupportedOperationException("Unknown EObject implementation")   		
     	}
     }
 	

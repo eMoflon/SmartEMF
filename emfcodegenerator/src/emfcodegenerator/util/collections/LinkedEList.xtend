@@ -12,6 +12,11 @@ import java.util.function.UnaryOperator
 import java.util.stream.Collectors
 import org.eclipse.emf.ecore.EObject
 import org.eclipse.emf.ecore.EStructuralFeature
+import org.eclipse.emf.ecore.resource.Resource
+import emfcodegenerator.util.collections.SmartEMFListIterator.PseudoListIterator
+import emfcodegenerator.util.SmartObject
+import org.eclipse.emf.ecore.InternalEObject
+import org.eclipse.emf.ecore.resource.Resource.Internal
 
 class LinkedEList<E> extends LinkedList<E> implements MinimalSObjectContainerCollection<E> {
 
@@ -38,6 +43,10 @@ class LinkedEList<E> extends LinkedList<E> implements MinimalSObjectContainerCol
 	 */
 	val notifications = new ListNotificationBuilder
 	
+	/**
+	 * stores the resource in which the objects are stored
+	 */
+	var Resource resource = null
 	/**########################Constructors########################*/
 
 	/**
@@ -81,6 +90,9 @@ class LinkedEList<E> extends LinkedList<E> implements MinimalSObjectContainerCol
 		super(c)
 	}
 	
+	new(Resource rs){
+		this.resource = rs
+	}
 	/**
 	 * Constructs new LinkedEList. The
 	 * {@link #the_eContainer eContainer} and the
@@ -200,6 +212,10 @@ class LinkedEList<E> extends LinkedList<E> implements MinimalSObjectContainerCol
 	override add(E obj){
 		val added = addNotification[SmartEMFNotification.addToFeature(eContainer, eContainingFeature, obj, size)]
 		super.add(this.set_containment_to_passed_object(obj))
+//		if(resource !== null){
+// 		if(obj instanceof SmartObject)(obj as SmartObject).resource = resource
+// 		else (obj as InternalEObject).eSetResource(resource as Internal, SmartEMFNotification.addToFeature(eContainer, eContainingFeature, obj, size))
+// 		}
 		added
 	}
 	

@@ -204,7 +204,8 @@ class EMFPackageFactorySourceCreator extends EMFPackageFactoryInterfaceCreator {
 '''
 «IDENTION»@Override
 «IDENTION»public Object createFromString(EDataType eDataType, String initialValue) {
-«IDENTION»«IDENTION» Object result = null;	'''
+«IDENTION»«IDENTION» Object result = null;
+'''
 		for(e_enum : this.e_pak.get_all_eenums_in_package){
 			declaration += 
 '''
