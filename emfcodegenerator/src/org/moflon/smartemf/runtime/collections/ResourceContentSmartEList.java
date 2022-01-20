@@ -37,6 +37,8 @@ public final class ResourceContentSmartEList<T extends EObject> extends LinkedHa
 		if (contains(element))
 			return false;
 
+		resource.loaded();
+
 		if (element instanceof SmartObject) {
 			resetContainment(element, !resource.equals(element.eResource()));
 			((SmartObject) element).setResource(resource, true);
@@ -98,15 +100,14 @@ public final class ResourceContentSmartEList<T extends EObject> extends LinkedHa
 		if (oldContainer != null) {
 			if (e.eContainingFeature().isMany()) {
 				Object getResult = oldContainer.eGet(e.eContainingFeature());
-				if(removeRecursively)
+				if (removeRecursively)
 					((SmartCollection<?, ?>) getResult).remove(e);
 				else
 					((SmartCollection<?, ?>) getResult).removeWithoutContainerResetting(e);
 			} else {
-				if(removeRecursively) {
+				if (removeRecursively) {
 					oldContainer.eUnset(e.eContainingFeature());
-				}
-				else {
+				} else {
 					Resource tmp = e.eResource();
 					((SmartObject) e).setResourceWithoutChecks(null);
 					oldContainer.eUnset(e.eContainingFeature());
@@ -124,6 +125,8 @@ public final class ResourceContentSmartEList<T extends EObject> extends LinkedHa
 
 	@Override
 	public void clear() {
+		int oldSize = size();
+
 		for (T t : this) {
 			sendRemoveNotification((EObject) t);
 			if (t instanceof SmartObject) {
@@ -135,6 +138,9 @@ public final class ResourceContentSmartEList<T extends EObject> extends LinkedHa
 			}
 		}
 		super.clear();
+
+		if (oldSize == 0)
+			resource.loaded();
 	}
 
 	@Override
@@ -317,8 +323,8 @@ public final class ResourceContentSmartEList<T extends EObject> extends LinkedHa
 	@Override
 	public T get(int index) {
 		int counter = 0;
-		for(T t : this) {
-			if(counter == index)
+		for (T t : this) {
+			if (counter == index)
 				return t;
 			counter++;
 		}
@@ -333,8 +339,8 @@ public final class ResourceContentSmartEList<T extends EObject> extends LinkedHa
 	@Override
 	public int indexOf(Object o) {
 		int counter = 0;
-		for(T t : this) {
-			if(t.equals(o)) {
+		for (T t : this) {
+			if (t.equals(o)) {
 				return counter;
 			}
 			counter++;

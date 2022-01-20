@@ -8,10 +8,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Writer;
+import java.util.Arrays;
 import java.util.Map;
 
 import org.eclipse.emf.common.notify.Adapter;
 import org.eclipse.emf.common.notify.Notification;
+import org.eclipse.emf.common.util.BasicEList;
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.common.util.URI;
 import org.eclipse.emf.ecore.EObject;
@@ -63,6 +65,17 @@ public class SmartEMFResource extends UnlockedResourceImpl implements XMIResourc
 	@Override
 	public EList<Adapter> eAdapters() {
 		return adapters;
+	}
+
+	@Override
+	protected BasicEList<Adapter> eBasicAdapters() {
+		return new BasicEList<>(adapters);
+	}
+
+	@Override
+	protected Adapter[] eBasicAdapterArray() {
+		BasicEList<Adapter> adapters = eBasicAdapters();
+		return adapters == null ? null : Arrays.copyOf(adapters.data(), adapters.size(), Adapter[].class);
 	}
 
 //	############ The meat and potatoes ############
@@ -322,6 +335,14 @@ public class SmartEMFResource extends UnlockedResourceImpl implements XMIResourc
 				((Adapter.Internal) adapter).unsetTarget(this);
 			else if (adapter.getTarget() == this)
 				adapter.setTarget(null);
+		}
+	}
+
+	public void loaded() {
+		if (!isLoaded()) {
+			Notification notification = setLoaded(true);
+			if (notification != null)
+				eNotify(notification);
 		}
 	}
 
